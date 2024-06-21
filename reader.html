@@ -224,6 +224,7 @@
 	</div>
 	<h1 class="loading" id="loading">加载中</h1>
 	<toast class="hidden"></toast>
+	<script src="js/bilinyj.js"></script>
 	<script>
 		if(!bilinyj){
 			var bilinyj = {};
@@ -237,56 +238,7 @@
 		bilinyj.reader.request_info.novel_id = window.location.hash.slice(1).split("/")[0];
 		bilinyj.reader.request_info.chapter_num = window.location.hash.slice(1).split("/")[1] || 1;
 
-		bilinyj.util = bilinyj.util || {};
-
 		bilinyj.reader.novel = new XMLHttpRequest();
-
-		bilinyj.util.resolvePath = bilinyj.util.resolvePath || function(path1, path2) {
-			// 检查 path1 是否为绝对路径
-			if (!path1.startsWith('/')) {
-				throw new TypeError('TypeError: Is not the correct absolute path.');
-			}
-
-			// 如果 path2 是绝对路径，直接返回
-			if (path2.startsWith('/')) {
-				return path2;
-			}
-
-			// 将绝对路径用 '/' 分割
-			let absolutePathArray = path1.split('/');
-
-			// 如果最后一个字符是 '/'，则删除分割数组的最后一个空字符串
-			absolutePathArray.pop();
-
-			// 如果第一个字符是 '/'，则删除分割数组的第一个空字符串
-			if (absolutePathArray[0] === '') {
-				absolutePathArray.shift();
-			}
-
-			// 将相对路径用 '/' 分割
-			let relativePathArray = path2.split('/');
-
-			// 遍历相对路径数组
-			for (let segment of relativePathArray) {
-				if (segment === '.') {
-					// 如果是当前目录标记 '.'，不做处理
-					continue;
-				} else if (segment === '..') {
-					// 如果是父目录标记 '..'
-					if (absolutePathArray.length === 0) {
-						throw new TypeError('TypeError: Cannot point to the parent directory of the root directory.');
-					}
-					// 删除数组最后一个元素
-					absolutePathArray.pop();
-				} else {
-					// 其他情况，添加到绝对路径数组末尾
-					absolutePathArray.push(segment);
-				}
-			}
-
-			// 将结果路径数组重新连接成字符串，并返回
-			return '/' + absolutePathArray.join('/');
-		}
 
 		if(eval(localStorage.getItem("dark", false))){
 			document.body.classList.add("dark");
@@ -354,12 +306,28 @@
 					}
 					load_success();
 				}else{
-					document.querySelector("#loading").innerText = "加载失败";
+					switch(event.target.status){
+						case 404:
+							document.querySelector("#loading").innerText = "啊哦，这个小说不见了呢，再找找看吧 (＞﹏＜)";
+							break;
+						case 0:
+							document.querySelector("#loading").innerText = "这个路由器一点都不配合，害得我又看不了小说了，哼！ (￣へ￣)";
+							break;
+						default:
+							document.querySelector("#loading").innerText = "啊嘞，网站今天也在跟我闹脾气呢，小说又看不了了，气死我了！ (￣ε￣〃)";
+							break;
+					}
 				}
 				document.querySelector("#loading").classList.remove("loading");
 			}
 		});
-		bilinyj.reader.novel.send();
+
+		if(bilinyj.reader.request_info.novel_id != ""){
+			bilinyj.reader.novel.send();
+		}else{
+			document.querySelector("#loading").innerText = "哎呀，没看到小说ID哦，请检查一下 (⊙﹏⊙)";
+			document.querySelector("#loading").classList.remove("loading");
+		}
 
 		function toast(text){
 			let toast_e = document.querySelector("toast");
@@ -391,7 +359,9 @@
 		}
 
 		function load_success(){
-			window.location.hash = `#${bilinyj.reader.request_info.novel_id}/${document.querySelector("#chapter_input").value}`;
+			// window.location.hash = `#${bilinyj.reader.request_info.novel_id}/${document.querySelector("#chapter_input").value}`;
+			// window.history.replaceState(null, null, "#17D88AC0CC5AE356/1");
+			window.history.replaceState(null, null, `#${bilinyj.reader.request_info.novel_id}/${document.querySelector("#chapter_input").value}`);
 			document.getElementById("title").innerText = bilinyj.reader.novel_data.meta.documentName;
 			let chapter_index = 0;
 			for(n in bilinyj.reader.novel_data.chapters){
@@ -499,7 +469,7 @@
 					return paragraph;
 				})());
 			});
-			// 如果存在更正版的段落，就显示“切换更正版段落显示状态”按钮，否则隐藏
+			// 如果不存在更正版的段落，就隐藏“切换更正版段落显示状态”按钮
 			if(!document.querySelector(".paragraph p.amend")){
 				document.querySelector("div.fb.item > a[href=\"javascript:more_genuine()\"]").parentNode.classList.add("hidden");
 			}
