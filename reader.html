@@ -247,7 +247,7 @@
 		document.querySelector("#chapter_input").value = bilinyj.reader.request_info.chapter_num;
 
 		function dark(){
-			toggleClass(document.body, "dark");
+			document.body.classList.toggle("dark");
 			toggleLocalStorage("dark", false);
 		}
 
@@ -256,11 +256,13 @@
 			setTimeout(() => {
 				bilinyj.reader.inToggleChapter = false;
 			}, 200);
-			toggleClass(document.querySelector(".novel-content"), "show-amend");
+			document.querySelector(".novel-content").classList.toggle("show-amend");
 		}
 
-		function toggleClass(element, className){
-			element.classList[element.classList.contains(className) ? "remove" : "add"](className);
+		function toggleClasss(elements, className){
+			elements.forEach(element => {
+				element.classList.toggle(className);
+			});
 		}
 
 		function toggleLocalStorage(item, ensureBoolean = true){
@@ -278,7 +280,7 @@
 
 		addEventListeners(document.querySelector(".main > .content"), [
 			["click", event => {
-				toggleClass(document.querySelector(".main"), "open");
+				document.querySelector(".main").classList.toggle("open");
 			}],
 			["scroll", event => {
 				if(!bilinyj.reader.inToggleChapter){
