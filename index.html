@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://api.github.com;">
+	<title>农药书屋</title>
+	<style>
+		* {
+			transition: background-color 400ms, color 400ms, fill 400ms;
+			font-family: Verdana;
+		}
+
+		html, body {
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			--main-bg: #fff;
+			--details-bg: #fff;
+			--main-shadow-color: rgba(0, 0, 0, .7);
+			--text-color: #000;
+			--card-bg: #fff;
+			--card-bd: #0f87ff;
+			--card-shadow-color: rgba(17,74,130,0.8);
+			background-color: var(--main-bg);
+		}
+
+		body.dark {
+			--main-bg: #111;
+			--details-bg: #333;
+			--main-shadow-color: rgba(213, 213, 213, .7);
+			--text-color: #eee;
+			--card-bg: #333;
+			--card-bd: #65b2ff;
+			--card-shadow-color: rgba(119,180,242,0.8);
+		}
+
+		.main > .head, .main > .footer {
+			position: fixed;
+			left: 0;
+			width: 100vw;
+			height: 45px;
+			background-color: var(--main-bg);
+			box-shadow: 0px 0px 2px 2px var(--main-shadow-color);
+			transition: bottom 400ms, top 400ms, background-color 400ms, color 400ms;
+			z-index: 1000;
+			/*display: flex;*/
+		}
+
+		.main > .head {
+			top: 0px;
+		}
+
+		.main > .footer {
+			bottom: 0px;
+		}
+
+		.main {
+			padding: 45px 0px;
+		}
+
+		.main > .list {
+			--card-width: 90px;
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(var(--card-width), 1fr)); /* '1fr' 表示可用空间的一个分数，这里用作列宽的最大值 */
+			grid-auto-rows: auto; /* 自动调整行高以适应内容 */
+			gap: 10px; /* 列和列之间的间隙 */
+			min-height: calc(100vh - 110px);
+			padding: 10px 12px;
+		}
+
+		.main > .list > div.novel-item {
+			justify-self: center;
+			height: 200px; /* 可选，用于可视化子元素高度 */
+			width: var(--card-width);
+			background-color: var(--card-bg); /* 可选，用于可视化子元素背景 */
+			margin-bottom: 10px; /* 子元素底部间距 */
+			border-radius: 3px;
+			border: 2px solid var(--card-bd);
+			box-shadow: 1px 1px 2px 3px var(--card-shadow-color);
+			transition: background-color 400ms, color 400ms, box-shadow 400ms, transform 400ms;
+		}
+
+		.main > .list > div.novel-item:not(.sd):hover {
+			box-shadow: 1px 1px 5px 5px var(--card-shadow-color);
+			transform: scale(1.03);
+			z-index: 999;
+		}
+
+		.main > .list > div.novel-item > .top {
+			height: calc(var(--card-width) / 0.75);
+			position: relative;
+		}
+
+		.main > .list > div.novel-item > .top > img.cover {
+			width: 100%;
+			height: 100%;
+		}
+
+		.main > .list > div.novel-item > .top > .novel-status {
+			-webkit-backdrop-filter: blur(2px);
+			backdrop-filter: blur(2px);
+			position: absolute;
+			background-color: rgba(255, 255, 255, 0.25);
+			top: 3px;
+			right: 3px;
+			font-size: 12px;
+			padding: 3px;
+			border-radius: 2px;
+		}
+
+		.main > .list > .novel-item > .bottom {
+			transition: color 0ms;
+			color: var(--text-color);
+			padding: 2px 5px;
+			height: calc(195px - (var(--card-width) / 0.75));
+		}
+
+		.main > .list > .novel-item > .bottom > .novel-name {
+			font-weight: 1000;
+			background-color: var(--card-bg);
+			width: calc(100% - 8px);
+			-o-text-overflow: ellipsis;
+			-moz-text-overflow: ellipsis;
+			-webkit-text-overflow: ellipsis;
+			text-overflow: ellipsis;
+			overflow:hidden;
+			-webkit-line-clamp: 2;
+			display: -webkit-box;
+			-webkit-box-orient: vertical;
+			font-size: 18px;
+			transition: background-color 400ms, color 400ms, font-size 400ms;
+		}
+
+		.main > .list > .novel-item:not(.sd):hover > .bottom > .novel-name {
+			position: absolute;
+			display: block;
+			height: calc(195px - (var(--card-width) / 0.75));
+			-o-text-overflow: clip;
+			-moz-text-overflow: clip;
+			-webkit-text-overflow: clip;
+			text-overflow: clip;
+			overflow: auto;
+			transition: background-color 400ms, color 400ms, height 400ms, font-size 400ms;
+			font-size: 13px;
+		}
+
+		.main > .list > .novel-item > .bottom > .author {
+			font-size: 14px;
+		}
+
+		.main > .list > .novel-item > .details {
+			display: none;
+		}
+
+		.main > .list > .novel-item.sd:first-of-type > .details {
+			display: block;
+			position: fixed;
+			overflow: auto;
+			top: 0;
+			left: 0;
+			z-index: 1001;
+			background-color: var(--details-bg);
+			color: var(--text-color);
+			transition: color 0ms;
+			padding: 45px 8px 8px 8px;
+		}
+
+		.main > .list > .novel-item.sd:first-of-type > .details > .close-button {
+			position: absolute;
+			top: 15px;
+			right: 15px;
+		}
+
+		.main > .list > .novel-item.sd:first-of-type > .details > .details-1 > .cover > img {
+			height: 230px;
+		}
+
+		.main > .list > .novel-item.sd:first-of-type > .details > .details-1 > .cover {
+			margin-bottom: 20px;
+		}
+
+		.main > .list > .novel-item.sd:first-of-type > .details > .details-1 > .basic-information > .novel-name {
+			font-size: 28px;
+			font-weight: 1000;
+		}
+
+		@media (max-width: 600px){
+			.main > .list > .novel-item.sd:first-of-type > .details {
+				width: calc(100vw - 16px);
+				height: calc(100vh - 53px);
+			}
+
+			.main > .list > .novel-item.sd:first-of-type > .details > .details-1 {
+				text-align: center;
+				width: 100%;
+				min-width: 172.5px;
+			}
+		}
+
+		@media not (max-width: 600px){
+			.main > .list > .novel-item.sd:first-of-type > .details {
+				/*min-width: 240px;*/
+				inset-inline: 180px;
+				inset-block: 200px;
+			}
+
+			.main > .list > .novel-item.sd:first-of-type > .details > .details-1 {
+				display: flex;
+				flex-direction: row-reverse;
+			}
+
+			.main > .list > .novel-item.sd:first-of-type > .details > .details-1 > .basic-information {
+				flex: 1;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="main">
+		<div class="head"></div>
+		<div class="list">
+			<div class="novel-item">
+				<div class="top">
+					<img src="cover.png" alt="《地表最强小孩哥，徒手掰断螺纹钢》封面" class="cover">
+					<div class="novel-status">连载</div>
+				</div>
+				<div class="bottom">
+					<div class="novel-name">地表最强小孩哥，徒手掰断螺纹钢</div>
+					<div class="author">一卷荷马</div>
+				</div>
+				<div class="details">
+					<div class="close-button">x</div>
+					<div class="details-1">
+						<div class="cover">
+							<img src="cover.png" alt="封面">
+						</div>
+						<div class="basic-information">
+							<div class="novel-name">地表最强小孩哥，徒手掰断螺纹钢</div>
+							<div class="author">一卷荷马</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="footer"></div>
+	</div>
+	<script src="js/bilinyj.js"></script>
+	<script>
+		function dark(){
+			document.bodyelement.classList.toggle("dark");
+			toggleLocalStorage("dark", false);
+		}
+
+		function toggleClasss(elements, className){
+			elements.forEach(element => {
+				element.classList.toggle(className)
+			});
+		}
+
+		function toggleLocalStorage(item, ensureBoolean = true){
+			let data = eval(localStorage.getItem(item, false));
+			if(!ensureBoolean || typeof data === "boolean"){
+				localStorage.setItem(item, !data);
+			}
+		}
+
+		if(eval(localStorage.getItem("dark", false))){
+			document.body.classList.add("dark");
+		}
+
+
+		function load_list () {
+			var novel_list_xhr = new XMLHttpRequest();
+			novel_list_xhr.open("GET", "https://api.github.com/search/code?q=repo%3Acnbilinyj%2Fnovel_op_edition+path%3A%2F%5E%5B%5Cda-f%5D%7B16%7D%5C%2Fcontent.json%2F+%7B&type=code");
+			novel_list_xhr.setRequestHeader("Accept", "application/vnd.github+json");
+			novel_list_xhr.setRequestHeader("X-GitHub-Api-Version", "2022-11-28");
+			/* 
+			看起来你很懂GitHub API，想要以此得到我的GitHub token（可能还想搞事），但是很抱歉，你的计划可能算是泡汤了。
+			（虽然正常来说不能在代码中硬编码token，但是这个token会定期更换，因为这个token的作用仅仅只是认证，使得
+			GitHub允许我使用api进行搜索）
+
+			你要知道，GitHub token在创建的时候可以选择权限，而且也仅仅只是可以选择权限，而非必须选择。这意味着我们可以
+			创建一个没有任何权限的GitHub token。所以当你拿到这个token之后，你唯一能干的是知道我在GitHub上面的账号，但
+			是这并没有任何卵用。毕竟你看一下网络请求的地址，看一下我是在哪个GitHub账号上面获取数据源的，你就知道我的
+			GitHub账号是什么了
+			*/
+			novel_list_xhr.setRequestHeader("Authorization", "Bearer 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");
+			novel_list_xhr.addEventListener("loadend", event => {
+				console.log(event.target.response);
+			});
+			novel_list_xhr.send();
+		}
+
+		window.addEventListener("load", event => {
+			load_list();
+		});
+	</script>
+</body>
+</html>

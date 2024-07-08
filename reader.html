@@ -1,0 +1,482 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>正在加载中... | 农药阅读器</title>
+	<style>
+		* {
+			transition: background-color 400ms, color 400ms, fill 400ms;
+		}
+
+		html, body, .main {
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			--main-bg: #fff;
+			--main-shadow-color: rgba(0, 0, 0, .7);
+			--text-color: #000;
+		}
+
+		body.dark {
+			--main-bg: #111;
+			--main-shadow-color: rgba(213, 213, 213, .7);
+			--text-color: #999;
+		}
+
+		.main {
+			height: 100vh;
+			width: 100vw;
+			overflow: hidden;
+		}
+
+		.main:not(.open) {
+			--position-head-top-footer-bottom: -48px;
+		}
+
+		.main.open {
+			--position-head-top-footer-bottom: 0px;
+		}
+
+		.main > .head, .main > .footer {
+			position: fixed;
+			left: 0;
+			width: 100vw;
+			height: 45px;
+			background-color: var(--main-bg);
+			box-shadow: 0px 0px 2px 2px var(--main-shadow-color);
+			transition: bottom 400ms, top 400ms, background-color 400ms, color 400ms;
+			display: flex;
+		}
+
+		.main > .head {
+			top: var(--position-head-top-footer-bottom);
+		}
+
+		.main > .footer {
+			bottom: var(--position-head-top-footer-bottom);
+		}
+
+		.main > .head .title {
+			display: inline-block;
+			font-weight: 1000;
+			font-size: 25px;
+			padding: 10px 8px;
+			line-height: 100%;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			color: var(--text-color);
+			flex: 1 1 0;
+		}
+
+		.main > .head .item.fb , .main > .footer .item.fb {
+			height: 100%;
+			display: inline-block;
+		}
+
+		.main > .head .item.fb > a, .main > .footer .item.fb > a {
+			color: var(--text-color);
+			text-decoration-line: none;
+			display: inline-block;
+			height: 100%;
+		}
+
+		.main > .head .item.fb > a svg, .main > .footer .item.fb > a svg {
+			padding: 10px 6px;
+			height: 25px;
+		}
+
+		.main > .head .item.fb > a svg *, .main > .footer .item.fb > a svg * {
+			fill: var(--text-color)
+		}
+
+		.main > .footer .item.fb {
+			flex: 1 1 0;
+			text-align: center;
+		}
+
+		.main > .content {
+			height: 100vh;
+			background-color: var(--main-bg);
+			padding: 8px;
+			overflow: auto;
+		}
+
+		.main > .content, .main > .content * {
+			color: var(--text-color);
+		}
+
+		.novel-content .image {
+			max-width: 100vh;
+			min-width: 80vh;
+		}
+
+		.novel-content .paragraph p {
+			text-indent: 2em;
+		}
+
+		#loading {
+			position: fixed;
+			left: 0;
+			top: 0;
+			height: 100vh;
+			width: 100vw;
+			z-index: 100;
+			padding: calc(50vh - 1em) 0;
+			text-align: center;
+			margin: 0;
+			background-color: var(--main-bg);
+			color: var(--text-color);
+		}
+
+		#loading.loading:not([hidden]):after {
+			content: "";
+			animation: loading 4s infinite;
+		}
+
+		@keyframes loading {
+			0%, 100% {
+				content: "";
+			}
+			25% {
+				content: ".";
+			}
+			50% {
+				content: "..";
+			}
+			75% {
+				content: "...";
+			}
+		}
+
+		toast {
+			pointer-events: none;
+			background-color: #000;
+			max-width: 80vw;
+			min-width: 10px;
+			min-height: 1.2em;
+			border-radius: 3px;
+			color: #fff;
+			opacity: .8;
+			z-index: 101;
+			position: fixed;
+			bottom: 30px;
+			transform: translateX(50vw) translateX(-50%);
+			transition: opacity 600ms;
+			text-align: center;
+			padding: 3px;
+		}
+
+		toast.hidden {
+			opacity: 0;
+		}
+
+		.paragraph p.amend .highlight {
+			color: red;
+			font-weight: bold;
+		}
+
+		.paragraph p.amend {
+			color: #16c;
+		}
+
+		.paragraph p.amend.highlight-error {
+			color: #cd7743;
+		}
+
+		.novel-content:not(.show-amend) .paragraph p.amend {
+			display: none;
+			/*height: 0px;*/
+			/*margin: -8px 0;*/
+			/*padding: 0;*/
+			/*opacity: 0;*/
+			/*transition: opacity 800ms, height 800ms;*/
+		}
+
+		/*.novel-content .paragraph p.amend {*/
+		/*}*/
+
+		:not(toast).hidden {
+			display: none!important;
+		}
+	</style>
+</head>
+<body>
+	<div class="main open">
+		<div class="head">
+			<div class="title" id="title"></div>
+			<div class="item fb hidden"><a href="javascript:more_genuine()"><svg t="1718511481953" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2485"><path d="M830.6 732.8H287.3c-24.4 0-47.5-9.6-65-27-17.4-17.4-27-40.5-27-65V505.6l20.1 20.1c10.9 10.9 28.7 10.9 39.6 0 10.9-10.9 10.9-28.7 0-39.6l-66.5-66.5c-11.7-11.7-30.7-11.7-42.4 0l-66.5 66.5c-10.9 10.9-10.9 28.7 0 39.6 10.9 10.9 28.7 10.9 39.6 0l20.1-20.1v135.2c0 81.7 66.3 148 148 148h543.3c15.5 0 28-12.5 28-28 0-15.4-12.5-28-28-28zM946.3 499.1c-10.9-10.9-28.7-10.9-39.6 0l-20.1 20.1V387c0-81.7-66.3-148-148-148H195.3c-15.5 0-28 12.5-28 28s12.5 28 28 28h543.3c24.4 0 47.5 9.6 65 27 17.4 17.4 27 40.5 27 65v132.2l-20.1-20.1c-10.9-10.9-28.7-10.9-39.6 0-10.9 10.9-10.9 28.7 0 39.6l66.5 66.5c11.7 11.7 30.7 11.7 42.4 0l66.5-66.5c10.9-10.9 10.9-28.6 0-39.6z" fill="" p-id="2486"></path></svg></a></div>
+			<div class="item fb"><a href="javascript:dark()"><svg t="1718172435228" class="icon" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4256"><path d="M542.331247 955.220693a431.045474 431.045474 0 0 1-21.360033-861.450146 32.467251 32.467251 0 0 1 28.408844 14.311222 32.04005 32.04005 0 0 1 1.922403 31.82645A363.120567 363.120567 0 0 0 514.563204 299.040467a367.606174 367.606174 0 0 0 367.178974 368.033375H899.471005a32.25365 32.25365 0 0 1 30.331248 46.137672 427.200668 427.200668 0 0 1-387.471006 242.009179z m-69.633708-790.321235A366.965373 366.965373 0 1 0 845.857322 729.65874 431.686275 431.686275 0 0 1 450.483104 299.040467a427.200668 427.200668 0 0 1 22.214435-135.209011z" p-id="4257"></path></svg></a></div>
+		</div>
+		<div class="content">
+			<h3 class="novel-title" id="novel_title"></h3>
+			<div class="novel-content" id="novel_content"></div>
+		</div>
+		<div class="footer">
+			<input type="hidden" id="chapter_input" value="1">
+			<div class="item fb"><a href="javascript:previous_chapter();"><svg t="1718341269845" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4235"><path d="M615.550562 511.360799l363.066167-363.066167c33.238452-33.238452 33.238452-88.209738 0-122.726592-33.238452-33.238452-88.209738-33.238452-122.726592 0L432.739076 449.997503c-33.238452 33.238452-33.238452 88.209738 0 122.726592L857.168539 997.153558c33.238452 33.238452 88.209738 33.238452 122.726592 0 33.238452-33.238452 33.238452-88.209738 0-122.726592L615.550562 511.360799zM104.189763 0C56.888889 0 19.815231 38.35206 19.815231 85.652934v852.694132a85.652934 85.652934 0 0 0 171.305868 0V85.652934C189.842697 38.35206 151.490637 0 104.189763 0z" p-id="4236"></path></svg></a></div>
+			<div class="item fb"><a href="javascript:"></a></div>
+			<div class="item fb"><a href="javascript:next_chapter();"><svg t="1718341362510" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1679"><path d="M408.32 512L43.52 875.52C10.24 908.8 10.24 963.84 43.52 998.4c33.28 33.28 88.32 33.28 122.88 0l424.96-424.96c33.28-33.28 33.28-88.32 0-122.88L166.4 25.6C133.12-7.68 78.08-7.68 43.52 25.6 10.24 58.88 10.24 113.92 43.52 148.48L408.32 512zM920.32 1024c47.36 0 85.76-38.4 85.76-85.76V85.76a85.76 85.76 0 0 0-171.52 0v853.76c0 46.08 38.4 84.48 85.76 84.48z" p-id="1680"></path></svg></a></div>
+		</div>
+	</div>
+	<h1 class="loading" id="loading">加载中</h1>
+	<toast class="hidden"></toast>
+	<script src="js/bilinyj.js"></script>
+	<script>
+		if(!bilinyj){
+			var bilinyj = {};
+		}
+
+		bilinyj.reader = {
+			inToggleChapter: false
+		}
+
+		bilinyj.reader.request_info = {};
+		bilinyj.reader.request_info.novel_id = window.location.hash.slice(1).split("/")[0];
+		bilinyj.reader.request_info.chapter_num = window.location.hash.slice(1).split("/")[1] || 1;
+
+		bilinyj.reader.novel = new XMLHttpRequest();
+
+		if(eval(localStorage.getItem("dark", false))){
+			document.body.classList.add("dark");
+		}
+
+		document.querySelector("#chapter_input").value = bilinyj.reader.request_info.chapter_num;
+
+		function dark(){
+			document.body.classList.toggle("dark");
+			toggleLocalStorage("dark", false);
+		}
+
+		function more_genuine(){
+			bilinyj.reader.inToggleChapter = true;
+			setTimeout(() => {
+				bilinyj.reader.inToggleChapter = false;
+			}, 200);
+			document.querySelector(".novel-content").classList.toggle("show-amend");
+		}
+
+		function toggleClasss(elements, className){
+			elements.forEach(element => {
+				element.classList.toggle(className);
+			});
+		}
+
+		function toggleLocalStorage(item, ensureBoolean = true){
+			let data = eval(localStorage.getItem(item, false));
+			if(!ensureBoolean || typeof data === "boolean"){
+				localStorage.setItem(item, !data);
+			}
+		}
+
+		function addEventListeners(element, eventListeners){
+			eventListeners.forEach(i => {
+				element.addEventListener(i[0], i[1]);
+			});
+		}
+
+		addEventListeners(document.querySelector(".main > .content"), [
+			["click", event => {
+				document.querySelector(".main").classList.toggle("open");
+			}],
+			["scroll", event => {
+				if(!bilinyj.reader.inToggleChapter){
+					document.querySelector(".main").classList.remove("open");
+				}
+			}]
+		]);
+
+		document.querySelector("#loading").classList.add("loading");
+		// bilinyj.reader.novel.open("GET", "https://bilinyj.666888999.gay/gh/cnbilinyj/novel_op_edition/main/17D88AC0CC5AE356/content.json", true);
+		bilinyj.reader.novel.open("GET", `https://jsd.cdn.zzko.cn/gh/cnbilinyj/novel_op_edition@main/${bilinyj.reader.request_info.novel_id}/content.json`, true);
+		// bilinyj.reader.novel.open("GET", "content.json", true);
+		bilinyj.reader.novel.addEventListener("readystatechange", function(event){
+			if(event.target.readyState === event.target.DONE){
+				if(event.target.status === 200){
+					bilinyj.reader.novel_data = JSON.parse(bilinyj.reader.novel.response);
+					let pictrue_url;
+					try{
+						pictrue_url = new URL(bilinyj.reader.novel_data.meta.cover);
+					}catch(e){
+						if(e.name === "TypeError" && e.message === "Failed to construct 'URL': Invalid URL"){
+							pictrue_url = new URL(bilinyj.reader.novel.responseURL);
+							pictrue_url.pathname = bilinyj.util.resolvePath(pictrue_url.pathname, bilinyj.reader.novel_data.meta.cover)
+						}
+					}
+					load_success();
+				}else{
+					switch(event.target.status){
+						case 404:
+							document.querySelector("#loading").innerText = "啊哦，这个小说不见了呢，再找找看吧 (＞﹏＜)";
+							break;
+						case 0:
+							document.querySelector("#loading").innerText = "这个路由器一点都不配合，害得我又看不了小说了，哼！ (￣へ￣)";
+							break;
+						default:
+							document.querySelector("#loading").innerText = "啊嘞，网站今天也在跟我闹脾气呢，小说又看不了了，气死我了！ (￣ε￣〃)";
+							break;
+					}
+				}
+				document.querySelector("#loading").classList.remove("loading");
+			}
+		});
+
+		if(bilinyj.reader.request_info.novel_id != ""){
+			bilinyj.reader.novel.send();
+		}else{
+			document.querySelector("#loading").innerText = "哎呀，没看到小说ID哦，请检查一下 (⊙﹏⊙)";
+			document.querySelector("#loading").classList.remove("loading");
+		}
+
+		function toast(text){
+			let toast_e = document.querySelector("toast");
+			toast_e.classList.remove("hidden");
+			toast_e.innerText = text;
+			setTimeout(() => {
+				toast_e.classList.add("hidden");
+			}, 4000);
+		}
+
+		function next_chapter(){
+			document.querySelector("#chapter_input").value++;
+			if(document.querySelector("#chapter_input").value > JSON.parse(bilinyj.reader.novel.response).chapters.length){
+				document.querySelector("#chapter_input").value = JSON.parse(bilinyj.reader.novel.response).chapters.length;
+				toast("已经是最后一章了");
+			}else{
+				load_success();
+			}
+		}
+
+		function previous_chapter(){
+			document.querySelector("#chapter_input").value--;
+			if(document.querySelector("#chapter_input").value < 1){
+				document.querySelector("#chapter_input").value = 1;
+				toast("已经是第一章了");
+			}else{
+				load_success();
+			}
+		}
+
+		function load_success(){
+			// window.location.hash = `#${bilinyj.reader.request_info.novel_id}/${document.querySelector("#chapter_input").value}`;
+			// window.history.replaceState(null, null, "#17D88AC0CC5AE356/1");
+			window.history.replaceState(null, null, `#${bilinyj.reader.request_info.novel_id}/${document.querySelector("#chapter_input").value}`);
+			document.getElementById("title").innerText = bilinyj.reader.novel_data.meta.documentName;
+			let chapter_index = 0;
+			for(n in bilinyj.reader.novel_data.chapters){
+				let i = bilinyj.reader.novel_data.chapters[n];
+				if(i.chapter === parseInt(document.querySelector("#chapter_input").value)){
+					chapter_index = n;
+					break;
+				}
+			}
+			let chapter_data = bilinyj.reader.novel_data.chapters[n];
+			document.getElementById("novel_title").innerText = chapter_data.title.content;
+			document.title = `${chapter_data.title.content} | 农药阅读器`;
+			document.getElementById("novel_content").innerHTML = "";
+			bilinyj.reader.inToggleChapter = true;
+			setTimeout(() => {
+				bilinyj.reader.inToggleChapter = false;
+			}, 200);
+			document.getElementById("novel_content").scrollTop = 0;
+			chapter_data.contents.forEach((i, n) => {
+				document.getElementById("novel_content").appendChild((() => {
+					let paragraph = document.createElement("div");
+					paragraph.classList.add("paragraph");
+					if(i.type === "text"){
+						paragraph.appendChild((() => {
+							let original = document.createElement("p");
+							original.classList.add("original");
+							original.innerText = i.content;
+							return original;
+						})());
+						if(i.changeData){
+							// 如果存在更正版的段落，显示“切换更正版段落显示状态”按钮，并且弹出toast提示
+							if(!document.querySelector(".paragraph p.amend")){
+								toast("当前章节有拼写错误，可通过顶栏右侧切换校正显示按钮打开校正显示");
+								document.querySelector("div.fb.item > a[href=\"javascript:more_genuine()\"]").parentNode.classList.remove("hidden");
+							}
+							paragraph.appendChild((() => {
+								let original = document.createElement("p");
+								original.classList.add("amend");
+
+								// 根据更改信息将原文分割成数组
+								let splitParts = [];
+								let currentPosition = 0;
+
+								i.changeData.changeItems.forEach(item => {
+									const {
+										position, length, original, amend
+									} = item;
+
+									// 添加未更正的部分
+									splitParts.push(escapeHtml(i.content.substring(currentPosition, position)).replace(/ /g, '&nbsp;'));
+
+									// 添加更正的部分（带有高亮）
+									const startTag = "<span class=\"highlight\">";
+									const endTag = "</span>";
+									const correctedPart = amend === "" ? "": `${startTag}${escapeHtml(amend).replace(/ /g, '&nbsp;')}${endTag}`;
+									splitParts.push(correctedPart);
+
+									// 更新当前位置
+									currentPosition = position + length;
+								});
+
+								// 添加剩余部分
+								splitParts.push(i.content.substring(currentPosition).replace(/ /g, '&nbsp;'));
+
+								// 输出结果数组
+								console.log(splitParts);
+
+								// 转义 HTML
+								function escapeHtml(text) {
+									const map = {
+										'&': '&amp;',
+										'<': '&lt;',
+										'>': '&gt;',
+										'"': '&quot;',
+										"'": '&#039;',
+										" ": "&nbsp;"
+									};
+
+									return text.replace(/[&<>"' ]/g, function(m) {
+										return map[m];
+									});
+								}
+
+								// 连接数组并设置到段落的更正部分
+								original.innerHTML = splitParts.join("");
+
+								// 如果更正计算结果不等于实际更正内容，将更正版段落的内容更改为实际更正内容，并且设置为另外的样式
+								if (i.changeData.amend.replace(/\u00A0/g, ' ') !== original.innerText.replace(/\u00A0/g, ' ')) {
+									console.log(i.changeData.amend.replace(/\u00A0/g, ' ') === original.innerText.replace(/\u00A0/g, ' '));
+									original.innerText = i.changeData.amend;
+									original.classList.add("highlight-error");
+								}
+
+								return original;
+							})());
+						}
+					}else if(i.type == "image"){
+						paragraph.appendChild((() => {
+							let img = document.createElement("img");
+							img.src = i.src;
+							img.classList.add("image");
+							return img;
+						}));
+					}
+					return paragraph;
+				})());
+			});
+			// 如果不存在更正版的段落，就隐藏“切换更正版段落显示状态”按钮
+			if(!document.querySelector(".paragraph p.amend")){
+				document.querySelector("div.fb.item > a[href=\"javascript:more_genuine()\"]").parentNode.classList.add("hidden");
+			}
+			document.querySelector("#loading").setAttribute("hidden", "");
+		}
+	</script>
+</body>
+</html>
